@@ -1,6 +1,7 @@
 package ro.usv.rf;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -12,6 +13,8 @@ public class MainClass {
 		int numberOfForms = learningSet.length;
 		int numberOfFeatures = learningSet[0].length;
 
+		double[] featureAverages = new double[numberOfFeatures];
+
 		// calculate average for each feature
 		for (int featureIndex = 0; featureIndex < numberOfFeatures; featureIndex++) {
 			Double[] feature = new Double[numberOfForms];
@@ -19,6 +22,7 @@ public class MainClass {
 				feature[formIndex] = learningSet[formIndex][featureIndex];
 			}
 			double featureAverage = StatisticsUtils.calculateFeatureAverage(feature);
+			featureAverages[featureIndex] = featureAverage;
 			System.out.println("Feature average is : " + featureAverage);
 		}
 
@@ -82,23 +86,30 @@ public class MainClass {
 				featureDispersions[feature1Index], featureDispersions[feature2Index]);
 		System.out.println("corelation is : " + corelation);
 
-		FileUtils.writeLearningSetToFile("scaledSet.csv", autoscaleLearningSet(learningSet));
+		FileUtils.writeLearningSetToFile("scaledSet.csv", autoscaleLearningSet(learningSet, featureAverages));
 
 	}
 
-	private static double[][] autoscaleLearningSet(double[][] learningSet) {
+	private static double[][] autoscaleLearningSet(double[][] learningSet, double[] featureAverages) {
 		int numberOfForms = learningSet.length;
 		int numberOfFeatures = learningSet[0].length;
-		double[][] autoscaledLearningSet = new double[numberOfForms][numberOfFeatures];
-		double[] featureAverages = new double[numberOfFeatures];
+		double[][] autoscaledLearningSet = new double[numberOfForms][numberOfFeatures - 1];
+		double[] lowerSums = new double[numberOfFeatures];
+		Arrays.fill(lowerSums, 0.0);
 
-		// calculate average for each feature
-		for (int featureIndex = 0; featureIndex < numberOfFeatures; featureIndex++) {
-			Double[] feature = new Double[numberOfForms];
-			for (int formIndex = 0; formIndex < numberOfForms; formIndex++) {
-				feature[formIndex] = learningSet[formIndex][featureIndex];
+		// caluclate lowerSums
+		for (int featureIndex = 0; featureIndex < numberOfFeatures - 1; featureIndex++) {
+			for (int k = 0; k < numberOfForms; k++) {
+				lowerSums[featureIndex] += Math.pow((learningSet[k][featureIndex] - featureAverages[featureIndex]), 2);
 			}
-			featureAverages[featureIndex] = StatisticsUtils.calculateFeatureAverage(feature);
+		}
+
+		// calculate autoscaled values
+		for (int formIndex = 0; formIndex < numberOfForms; formIndex++) {
+			for (int featureIndex = 0; featureIndex < numberOfFeatures - 1; featureIndex++) {
+				double upperMember = (learningSet[featureIndex][formIndex] - featureAverages[featureIndex]);
+				autoscaledLearningSet[formIndex][featureIndex] = upperMember / lowerSums[featureIndex];
+			}
 		}
 
 		return autoscaledLearningSet;
