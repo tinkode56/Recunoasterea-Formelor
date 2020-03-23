@@ -39,24 +39,24 @@ public class MainClass {
                 dist2.add(new DistanceObj(d2, learningSet.get(i).get(3)));
                 dist3.add(new DistanceObj(d3, learningSet.get(i).get(3)));
             }
-            
+
             // Guess the new set`s classes
             System.out.println("\n-- 9-NN -- ");
-            System.out.println(" /> " + guessClass(dist1, 9));
-            System.out.println(" /> " + guessClass(dist2, 9));
-            System.out.println(" /> " + guessClass(dist3, 9));
+            System.out.println(guessClass(dist1, 9));
+            System.out.println(guessClass(dist2, 9));
+            System.out.println(guessClass(dist3, 9));
             System.out.println("\n-- 11-NN -- ");
-            System.out.println(" /> " + guessClass(dist1, 11));
-            System.out.println(" /> " + guessClass(dist2, 11));
-            System.out.println(" /> " + guessClass(dist3, 11));
+            System.out.println(guessClass(dist1, 11));
+            System.out.println(guessClass(dist2, 11));
+            System.out.println(guessClass(dist3, 11));
             System.out.println("\n-- 17-NN -- ");
-            System.out.println(" /> " + guessClass(dist1, 17));
-            System.out.println(" /> " + guessClass(dist2, 17));
-            System.out.println(" /> " + guessClass(dist3, 17));
+            System.out.println(guessClass(dist1, 17));
+            System.out.println(guessClass(dist2, 17));
+            System.out.println(guessClass(dist3, 17));
             System.out.println("\n-- 31-NN -- ");
-            System.out.println(" /> " + guessClass(dist1, 31));
-            System.out.println(" /> " + guessClass(dist2, 31));
-            System.out.println(" /> " + guessClass(dist3, 31) + "\n");
+            System.out.println(guessClass(dist1, 31));
+            System.out.println(guessClass(dist2, 31));
+            System.out.println(guessClass(dist3, 31) + "\n");
         } catch (USVInputFileCustomException e) {
             System.out.println(e.getMessage());
         } finally {
@@ -67,8 +67,9 @@ public class MainClass {
     /**
      * @param distances the distance data structure
      * @param k         the value for k-nn
+     * @return a list containing the class and the probability
      */
-    public static String guessClass(PriorityQueue<DistanceObj> distances, int k) {
+    public static List<String> guessClass(PriorityQueue<DistanceObj> distances, int k) {
         Map<String, Integer> bestGuess = new HashMap<String, Integer>();
         for (int i = 0; i < k; i++) {
             DistanceObj dObj = distances.remove();
@@ -77,9 +78,14 @@ public class MainClass {
         }
         // System.out.println(bestGuess);
         // Get the key associated to the max value
-        String res = bestGuess.entrySet().stream().max((entry1, entry2) -> entry1.getValue() > entry2.getValue() ? 1 : -1).get().getKey();
-        System.out.println("Probability: " + (bestGuess.get(res)/(double)k)*Double.valueOf(100)+ "%");
-        return res;
+        String res = bestGuess.entrySet().stream()
+                .max((entry1, entry2) -> entry1.getValue() > entry2.getValue() ? 1 : -1).get().getKey();
+        double probability = (bestGuess.get(res) / (double) k) * Double.valueOf(100);
+        List<String> l = new ArrayList<>();
+        l.add(res);
+        l.add(Double.toString(probability));
+
+        return l;
     }
 
 }
