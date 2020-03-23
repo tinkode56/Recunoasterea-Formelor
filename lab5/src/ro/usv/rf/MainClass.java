@@ -1,7 +1,9 @@
 package ro.usv.rf;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.PriorityQueue;
 
 /**
@@ -37,15 +39,47 @@ public class MainClass {
                 dist2.add(new DistanceObj(d2, learningSet.get(i).get(3)));
                 dist3.add(new DistanceObj(d3, learningSet.get(i).get(3)));
             }
-            for (int i = 0; i < 31; i++){
-                System.out.println(dist3.remove());
-
-            }
+            
+            // Guess the new set`s classes
+            System.out.println("\n-- 9-NN -- ");
+            System.out.println(" /> " + guessClass(dist1, 9));
+            System.out.println(" /> " + guessClass(dist2, 9));
+            System.out.println(" /> " + guessClass(dist3, 9));
+            System.out.println("\n-- 11-NN -- ");
+            System.out.println(" /> " + guessClass(dist1, 11));
+            System.out.println(" /> " + guessClass(dist2, 11));
+            System.out.println(" /> " + guessClass(dist3, 11));
+            System.out.println("\n-- 17-NN -- ");
+            System.out.println(" /> " + guessClass(dist1, 17));
+            System.out.println(" /> " + guessClass(dist2, 17));
+            System.out.println(" /> " + guessClass(dist3, 17));
+            System.out.println("\n-- 31-NN -- ");
+            System.out.println(" /> " + guessClass(dist1, 31));
+            System.out.println(" /> " + guessClass(dist2, 31));
+            System.out.println(" /> " + guessClass(dist3, 31) + "\n");
         } catch (USVInputFileCustomException e) {
             System.out.println(e.getMessage());
         } finally {
             System.out.println("Finished learning set operations");
         }
+    }
+
+    /**
+     * @param distances the distance data structure
+     * @param k         the value for k-nn
+     */
+    public static String guessClass(PriorityQueue<DistanceObj> distances, int k) {
+        Map<String, Integer> bestGuess = new HashMap<String, Integer>();
+        for (int i = 0; i < k; i++) {
+            DistanceObj dObj = distances.remove();
+            // If no value for this key, put 1, else add 1 to the old value
+            bestGuess.merge(dObj.getOfClass(), 1, Integer::sum);
+        }
+        // System.out.println(bestGuess);
+        // Get the key associated to the max value
+        String res = bestGuess.entrySet().stream().max((entry1, entry2) -> entry1.getValue() > entry2.getValue() ? 1 : -1).get().getKey();
+        System.out.println("Probability: " + (bestGuess.get(res)/(double)k)*Double.valueOf(100)+ "%");
+        return res;
     }
 
 }
