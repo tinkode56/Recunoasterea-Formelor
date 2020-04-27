@@ -13,13 +13,8 @@ public class MainClass {
 
     public static void main(String[] args) {
         List<ArrayList<String>> learningSet;
-        PriorityQueue<DistanceObj> dist1 = new PriorityQueue<>();
-        PriorityQueue<DistanceObj> dist2 = new PriorityQueue<>();
-        PriorityQueue<DistanceObj> dist3 = new PriorityQueue<>();
-
-        double[] unknownPattern1 = { 25.89, 47.56 };
-        double[] unknownPattern2 = { 24, 45.15 };
-        double[] unknownPattern3 = { 25.33, 45.44 };
+        int[] kVal = { 9, 11, 17, 31 };
+        double[][] evalSet = { { 25.89, 47.56 }, { 24, 45.15 }, { 25.33, 45.44 } };
 
         try {
             // Read data sets from file and remove header
@@ -28,35 +23,24 @@ public class MainClass {
             int numberOfPatterns = learningSet.size();
 
             // Calculate distances
-            for (int i = 0; i < numberOfPatterns; i++) {
+            for (int i = 0; i < evalSet.length; i++) {
+                PriorityQueue<DistanceObj> dist = new PriorityQueue<>();
 
-                double[] pattern2 = { Double.valueOf(learningSet.get(i).get(0)),
-                        Double.valueOf(learningSet.get(i).get(1)) };
-                double d1 = DistanceUtils.generalizedEuclidianDistance(unknownPattern1, pattern2, 0);
-                double d2 = DistanceUtils.generalizedEuclidianDistance(unknownPattern2, pattern2, 0);
-                double d3 = DistanceUtils.generalizedEuclidianDistance(unknownPattern3, pattern2, 0);
-                dist1.add(new DistanceObj(d1, learningSet.get(i).get(3)));
-                dist2.add(new DistanceObj(d2, learningSet.get(i).get(3)));
-                dist3.add(new DistanceObj(d3, learningSet.get(i).get(3)));
+                for (int j = 0; j < learningSet.size(); j++) {
+                    double[] pattern2 = { Double.valueOf(learningSet.get(j).get(0)),
+                            Double.valueOf(learningSet.get(j).get(1)) };
+                    double d = DistanceUtils.generalizedEuclidianDistance(evalSet[i], pattern2);
+                    dist.add(new DistanceObj(d, learningSet.get(j).get(3)));
+                }
+                for (int k = 0; k < kVal.length; k++) {
+                    PriorityQueue<DistanceObj> distNew = new PriorityQueue<>(dist);
+                    System.out.println(kVal[k] + "-NN for evalSet " + i);
+                    System.out.println(guessClass(distNew, kVal[k]));
+                }
             }
 
             // Guess the new set`s classes
-            System.out.println("\n-- 9-NN -- ");
-            System.out.println(guessClass(dist1, 9));
-            System.out.println(guessClass(dist2, 9));
-            System.out.println(guessClass(dist3, 9));
-            System.out.println("\n-- 11-NN -- ");
-            System.out.println(guessClass(dist1, 11));
-            System.out.println(guessClass(dist2, 11));
-            System.out.println(guessClass(dist3, 11));
-            System.out.println("\n-- 17-NN -- ");
-            System.out.println(guessClass(dist1, 17));
-            System.out.println(guessClass(dist2, 17));
-            System.out.println(guessClass(dist3, 17));
-            System.out.println("\n-- 31-NN -- ");
-            System.out.println(guessClass(dist1, 31));
-            System.out.println(guessClass(dist2, 31));
-            System.out.println(guessClass(dist3, 31) + "\n");
+
         } catch (USVInputFileCustomException e) {
             System.out.println(e.getMessage());
         } finally {
