@@ -12,7 +12,8 @@ public class MainClass {
 
     public static void main(String[] args) {
         String[][] learningSet;
-        int[] K = { 1, 3, 5, 7, 9, 11, 13, 15 };
+        int[] kVal = { 1, 3, 5, 7, 9, 11, 13, 15 };
+
         try {
             learningSet = FileUtils.readLearningSetFromFile("iris.csv");
             int numberOfPatterns = learningSet.length;
@@ -25,12 +26,12 @@ public class MainClass {
 
             // create map with distinct classes and number of occurence for each class
             for (int i = 0; i < numberOfPatterns; i++) {
-                String clazz = learningSet[i][learningSet[i].length - 1];
-                if (classesMap.containsKey(clazz)) {
-                    Integer nrOfClassPatterns = classesMap.get(clazz);
-                    classesMap.put(clazz, nrOfClassPatterns + 1);
+                String cls = learningSet[i][learningSet[i].length - 1];
+                if (classesMap.containsKey(cls)) {
+                    Integer nrOfClassPatterns = classesMap.get(cls);
+                    classesMap.put(cls, nrOfClassPatterns + 1);
                 } else {
-                    classesMap.put(clazz, 1);
+                    classesMap.put(cls, 1);
                 }
             }
             Random random = new Random();
@@ -53,6 +54,7 @@ public class MainClass {
                 classesEvaluationPatterns.put(className, selectedPatternsForEvaluation);
             }
 
+            // split into training set and evaluation set
             String[][] evaluationSet = new String[evaluationSetSize][numberOfPatterns];
             String[][] trainingSet = new String[numberOfPatterns - evaluationSetSize][numberOfPatterns];
             int evaluationSetIndex = 0;
@@ -82,26 +84,22 @@ public class MainClass {
             for (int i = 0; i < evaluationSet.length; i++) {
                 System.out.println("-------------------");
                 PriorityQueue<DistanceObj> dist = new PriorityQueue<>();
-                List<String> l1 = new ArrayList<>();
-                l1.addAll(Arrays.asList(evaluationSet[i]));
-                l1.remove(l1.size() - 1);
-                double[] pattern1 = l1.stream().mapToDouble(Double::parseDouble).toArray();
+                double[] pattern1 = Arrays.stream(Arrays.copyOf(evaluationSet[i], numberOfFeatures)).mapToDouble(Double::parseDouble).toArray();
+
                 for (int j = 0; j < trainingSet.length; j++) {
-                    List<String> l2 = new ArrayList<>();
-                    l2.addAll(Arrays.asList(trainingSet[i]));
-                    l2.remove(l2.size() - 1);
-                    double[] pattern2 = l2.stream().mapToDouble(Double::parseDouble).toArray();
-                    double d = DistanceUtils.generalizedEuclidianDistance(pattern1, pattern2, 1);
-                    dist.add(new DistanceObj(d, trainingSet[i][numberOfFeatures]));
+                    double[] pattern2 = Arrays.stream(Arrays.copyOf(trainingSet[j], numberOfFeatures)).mapToDouble(Double::parseDouble).toArray();
+                    double d = DistanceUtils.generalizedEuclidianDistance(pattern1, pattern2);
+                    dist.add(new DistanceObj(d, trainingSet[j][numberOfFeatures]));
                 }
-                for (int iterator = 0; iterator < K.length; iterator++) {
-                    System.out.println(K[iterator] + "-NN: calculated class: " + guessClass(dist, K[iterator])
-                            + ", actual class: " + evaluationSet[i][numberOfFeatures]);
+
+                for (int k = 0; k < kVal.length; k++) {
+                    PriorityQueue<DistanceObj> distNew = new PriorityQueue<>(dist);
+                    System.out.println(kVal[k] + "-NN: guessed class: " + guessClass(distNew, kVal[k])
+                            + ", expected class: " + evaluationSet[i][numberOfFeatures]);
                 }
             }
 
             // type 3 classifier
-
 
         } catch (USVInputFileCustomException e) {
             e.printStackTrace();
