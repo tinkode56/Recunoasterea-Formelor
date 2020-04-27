@@ -7,12 +7,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Random;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 public class MainClass {
 
     public static void main(String[] args) {
         String[][] learningSet;
         int[] kVal = { 1, 3, 5, 7, 9, 11, 13, 15 };
+        Map<String, Integer> classes;
+        double[][] wMatrix;
+        int numberOfClasses;
+        List<String> classNames;
+        double[][] dValues;
 
         try {
             learningSet = FileUtils.readLearningSetFromFile("iris.csv");
@@ -84,10 +91,12 @@ public class MainClass {
             for (int i = 0; i < evaluationSet.length; i++) {
                 System.out.println("-------------------");
                 PriorityQueue<DistanceObj> dist = new PriorityQueue<>();
-                double[] pattern1 = Arrays.stream(Arrays.copyOf(evaluationSet[i], numberOfFeatures)).mapToDouble(Double::parseDouble).toArray();
+                double[] pattern1 = Arrays.stream(Arrays.copyOf(evaluationSet[i], numberOfFeatures))
+                        .mapToDouble(Double::parseDouble).toArray();
 
                 for (int j = 0; j < trainingSet.length; j++) {
-                    double[] pattern2 = Arrays.stream(Arrays.copyOf(trainingSet[j], numberOfFeatures)).mapToDouble(Double::parseDouble).toArray();
+                    double[] pattern2 = Arrays.stream(Arrays.copyOf(trainingSet[j], numberOfFeatures))
+                            .mapToDouble(Double::parseDouble).toArray();
                     double d = DistanceUtils.generalizedEuclidianDistance(pattern1, pattern2);
                     dist.add(new DistanceObj(d, trainingSet[j][numberOfFeatures]));
                 }
@@ -100,6 +109,41 @@ public class MainClass {
             }
 
             // type 3 classifier
+            classes = new HashMap<String, Integer>();
+
+            // count the classes
+            for (int i = 0; i < numberOfPatterns; i++) {
+                classes.merge(learningSet[i][numberOfFeatures], 1, Integer::sum);
+            }
+            numberOfClasses = classes.size();
+            wMatrix = new double[numberOfClasses][numberOfFeatures + 1];
+            classNames = classes.keySet().stream().collect(Collectors.toList());
+
+            // calculate the W matrix
+            for (int i = 0; i < numberOfClasses; i++) {
+                double[] avg = calculateClassFeatureAverage(learningSet, classNames.get(i));
+                for (int j = 0; j < numberOfFeatures; j++)
+                    wMatrix[i][j] = avg[j];
+                double squareSums = Arrays.stream(avg).map(x -> Math.pow(x, 2)).sum();
+                wMatrix[i][numberOfFeatures] = (-0.5) * squareSums;
+            }
+
+            // calculate the value of discriminant functions
+            dValues = new double[evaluationSet.length][numberOfClasses];
+            for (int i = 0; i < evaluationSet.length; i++) {
+                for (int j = 0; j < numberOfClasses; j++) {
+                    double[] pattern = Arrays.stream(Arrays.copyOf(evaluationSet[i], numberOfFeatures))
+                            .mapToDouble(Double::parseDouble).toArray();
+                    double[] finalPattern = Arrays.copyOf(pattern, pattern.length + 1);
+                    finalPattern[finalPattern.length - 1] = 1;
+                    dValues[i][j] = calculateDiscriminantValue(wMatrix[j], finalPattern);
+                }
+            }
+            // show classes
+            for (int i = 0; i < evaluationSet.length; i++) {
+                System.out.println("Determined class: " + classNames.get(getClassName(dValues[i])) + " Actual class: "
+                        + evaluationSet[i][numberOfFeatures]);
+            }
 
         } catch (USVInputFileCustomException e) {
             e.printStackTrace();
@@ -126,6 +170,46 @@ public class MainClass {
                 .max((entry1, entry2) -> entry1.getValue() > entry2.getValue() ? 1 : -1).get().getKey();
 
         return res;
+    }
+
+    public static double calculateDiscriminantValue(double[] array1, double[] array2) {
+        double result = 0;
+        for (int i = 0; i < array1.length; i++) {
+            result += (array1[i] * array2[i]);
+        }
+        return result;
+    }
+
+    public static double[] calculateClassFeatureAverage(String[][] learningSet, String className) {
+        double[] averages = new double[learningSet[0].length - 1];
+        int[] nOldValues = new int[learningSet[0].length - 1];
+        double[] sumOldValues = new double[learningSet[0].length - 1];
+        Arrays.fill(averages, 0);
+        Arrays.fill(nOldValues, 0);
+        Arrays.fill(sumOldValues, 0);
+
+        for (int i = 0; i < learningSet.length; i++) {
+            for (int j = 0; j < learningSet[0].length - 1; j++) {
+                if (learningSet[i][learningSet[i].length - 1].compareTo(className) == 0) {
+                    averages[j] = (sumOldValues[j] + Double.valueOf(learningSet[i][j])) / (nOldValues[j] + 1);
+                    sumOldValues[j] += Double.valueOf(learningSet[i][j]);
+                    nOldValues[j]++;
+                }
+            }
+        }
+        return averages;
+    }
+
+    public static int getClassName(double[] discriminantValues) {
+        int index = 0;
+        double maxVal = discriminantValues[0];
+        for (int i = 1; i < discriminantValues.length; i++) {
+            if (maxVal < discriminantValues[i]) {
+                maxVal = discriminantValues[i];
+                index = i;
+            }
+        }
+        return index;
     }
 
 }
